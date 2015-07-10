@@ -37,18 +37,18 @@ int main(int argc, char** argv){
 
     scheme_define(scm,
                   scm->global_env,
-                  mk_symbol(scm, "print_hello"),
-                  mk_foreign_func(scm, print_hello));
+                  scheme_make_symbol(scm, "print_hello"),
+                  scheme_make_foreign_func(scm, print_hello));
 
     scheme_define(scm,
                   scm->global_env,
-                  mk_symbol(scm, "square"),
-                  mk_foreign_func(scm, square));
+                  scheme_make_symbol(scm, "square"),
+                  scheme_make_foreign_func(scm, square));
 
     scheme_define(scm,
                   scm->global_env,
-                  mk_symbol(scm, "print"),
-                  mk_foreign_func(scm, print));
+                  scheme_make_symbol(scm, "print"),
+                  scheme_make_foreign_func(scm, print));
 
     /* Run first example */
     char *hello_scm = "(print_hello)";

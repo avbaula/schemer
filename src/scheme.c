@@ -1,4 +1,4 @@
-/* T I N Y S C H E M E    1 . 4 1
+ /* T N Y S C H E M E    1 . 4 1
  *   Dimitrios Souflis (dsouflis@acm.org)
  *   Based on MiniScheme (original credits follow)
  * (MINISCM)               coded by Atsushi Moriwaki (11/5/1989)
@@ -349,7 +349,7 @@ static int count_consecutive_cells(pointer x, int needed);
 static pointer find_slot_in_env(scheme *sc, pointer env, pointer sym, int all);
 static pointer mk_number(scheme *sc, num n);
 static char *store_string(scheme *sc, int len, const char *str, char fill);
-static pointer mk_vector(scheme *sc, int len);
+static pointer scheme_make_vector(scheme *sc, int len);
 static pointer mk_atom(scheme *sc, char *q);
 static pointer mk_sharp_const(scheme *sc, char *name);
 static pointer mk_port(scheme *sc, port *p);
@@ -812,7 +812,7 @@ static void check_range_alloced(pointer p, int n, int expect_alloced)
 /* Medium level cell allocation */
 
 /* get new cons cell */
-pointer _cons(scheme *sc, pointer a, pointer b, int immutable) {
+pointer scheme_cons(scheme *sc, pointer a, pointer b, int immutable) {
      pointer x = get_cell(sc,a, b);
 
      typeflag(x) = T_PAIR;
@@ -832,7 +832,7 @@ static int hash_fn(const char *key, int table_size);
 
 static pointer oblist_initial_value(scheme *sc)
 {
-     return mk_vector(sc, 461); /* probably should be bigger */
+     return scheme_make_vector(sc, 461); /* probably should be bigger */
 }
 
 /* returns the new symbol */
@@ -841,7 +841,7 @@ static pointer oblist_add_by_name(scheme *sc, const char *name)
      pointer x;
      int location;
 
-     x = immutable_cons(sc, mk_string(sc, name), sc->NIL);
+     x = immutable_cons(sc, scheme_make_string(sc, name), sc->NIL);
      typeflag(x) = T_SYMBOL;
      setimmutable(car(x));
 
@@ -909,7 +909,7 @@ static pointer oblist_add_by_name(scheme *sc, const char *name)
 {
      pointer x;
 
-     x = immutable_cons(sc, mk_string(sc, name), sc->NIL);
+     x = immutable_cons(sc, scheme_mk_string(sc, name), sc->NIL);
      typeflag(x) = T_SYMBOL;
      setimmutable(car(x));
      sc->oblist = immutable_cons(sc, x, sc->oblist);
@@ -930,7 +930,7 @@ static pointer mk_port(scheme *sc, port *p) {
      return (x);
 }
 
-pointer mk_foreign_func(scheme *sc, foreign_func f) {
+pointer scheme_make_foreign_func(scheme *sc, foreign_func f) {
      pointer x = get_cell(sc, sc->NIL, sc->NIL);
 
      typeflag(x) = (T_FOREIGN | T_ATOM);
@@ -938,7 +938,7 @@ pointer mk_foreign_func(scheme *sc, foreign_func f) {
      return (x);
 }
 
-INTERFACE pointer mk_character(scheme *sc, int c) {
+INTERFACE pointer scheme_make_character(scheme *sc, int c) {
      pointer x = get_cell(sc,sc->NIL, sc->NIL);
 
      typeflag(x) = (T_CHARACTER | T_ATOM);
@@ -948,7 +948,7 @@ INTERFACE pointer mk_character(scheme *sc, int c) {
 }
 
 /* get number atom (integer) */
-INTERFACE pointer mk_integer(scheme *sc, long num) {
+INTERFACE pointer scheme_make_integer(scheme *sc, long num) {
      pointer x = get_cell(sc,sc->NIL, sc->NIL);
 
      typeflag(x) = (T_NUMBER | T_ATOM);
@@ -957,7 +957,7 @@ INTERFACE pointer mk_integer(scheme *sc, long num) {
      return (x);
 }
 
-INTERFACE pointer mk_real(scheme *sc, double n) {
+INTERFACE pointer scheme_make_real(scheme *sc, double n) {
      pointer x = get_cell(sc,sc->NIL, sc->NIL);
 
      typeflag(x) = (T_NUMBER | T_ATOM);
@@ -968,9 +968,9 @@ INTERFACE pointer mk_real(scheme *sc, double n) {
 
 static pointer mk_number(scheme *sc, num n) {
      if(n.is_fixnum) {
-          return mk_integer(sc,n.value.ivalue);
+          return scheme_make_integer(sc,n.value.ivalue);
      } else {
-          return mk_real(sc,n.value.rvalue);
+          return scheme_make_real(sc,n.value.rvalue);
      }
 }
 
@@ -993,11 +993,11 @@ static char *store_string(scheme *sc, int len_str, const char *str, char fill) {
 }
 
 /* get new string */
-INTERFACE pointer mk_string(scheme *sc, const char *str) {
-     return mk_counted_string(sc,str,strlen(str));
+INTERFACE pointer scheme_make_string(scheme *sc, const char *str) {
+     return scheme_make_counted_string(sc,str,strlen(str));
 }
 
-INTERFACE pointer mk_counted_string(scheme *sc, const char *str, int len) {
+INTERFACE pointer scheme_make_counted_string(scheme *sc, const char *str, int len) {
      pointer x = get_cell(sc, sc->NIL, sc->NIL);
      typeflag(x) = (T_STRING | T_ATOM);
      strvalue(x) = store_string(sc,len,str,0);
@@ -1005,7 +1005,7 @@ INTERFACE pointer mk_counted_string(scheme *sc, const char *str, int len) {
      return (x);
 }
 
-INTERFACE pointer mk_empty_string(scheme *sc, int len, char fill) {
+INTERFACE pointer scheme_make_empty_string(scheme *sc, int len, char fill) {
      pointer x = get_cell(sc, sc->NIL, sc->NIL);
      typeflag(x) = (T_STRING | T_ATOM);
      strvalue(x) = store_string(sc,len,0,fill);
@@ -1013,8 +1013,9 @@ INTERFACE pointer mk_empty_string(scheme *sc, int len, char fill) {
      return (x);
 }
 
-INTERFACE static pointer mk_vector(scheme *sc, int len)
-{ return get_vector_object(sc,len,sc->NIL); }
+INTERFACE static pointer scheme_make_vector(scheme *sc, int len) {
+     return get_vector_object(sc,len,sc->NIL);
+}
 
 INTERFACE static void fill_vector(pointer vec, pointer obj) {
      int i;
@@ -1046,7 +1047,7 @@ INTERFACE static pointer set_vector_elem(pointer vec, int ielem, pointer a) {
 }
 
 /* get new symbol */
-INTERFACE pointer mk_symbol(scheme *sc, const char *name) {
+INTERFACE pointer scheme_make_symbol(scheme *sc, const char *name) {
      pointer x;
 
      /* first check oblist */
@@ -1094,7 +1095,7 @@ static pointer mk_atom(scheme *sc, char *q) {
                            cons(sc,
                                 sc->QUOTE,
                                 cons(sc, mk_atom(sc,p+2), sc->NIL)),
-                           cons(sc, mk_symbol(sc,strlwr(q)), sc->NIL)));
+                           cons(sc, scheme_make_symbol(sc,strlwr(q)), sc->NIL)));
      }
 #endif
 
@@ -1107,16 +1108,16 @@ static pointer mk_atom(scheme *sc, char *q) {
                c = *p++;
           }
           if (!isdigit(c)) {
-               return (mk_symbol(sc, strlwr(q)));
+               return (scheme_make_symbol(sc, strlwr(q)));
           }
      } else if (c == '.') {
           has_dec_point=1;
           c = *p++;
           if (!isdigit(c)) {
-               return (mk_symbol(sc, strlwr(q)));
+               return (scheme_make_symbol(sc, strlwr(q)));
           }
      } else if (!isdigit(c)) {
-          return (mk_symbol(sc, strlwr(q)));
+          return (scheme_make_symbol(sc, strlwr(q)));
      }
 
      for ( ; (c = *p) != 0; ++p) {
@@ -1137,13 +1138,13 @@ static pointer mk_atom(scheme *sc, char *q) {
                          }
                     }
                }
-               return (mk_symbol(sc, strlwr(q)));
+               return (scheme_make_symbol(sc, strlwr(q)));
           }
      }
      if(has_dec_point) {
-          return mk_real(sc,atof(q));
+          return scheme_make_real(sc,atof(q));
      }
-     return (mk_integer(sc, atol(q)));
+     return (scheme_make_integer(sc, atol(q)));
 }
 
 /* make constant */
@@ -1158,17 +1159,17 @@ static pointer mk_sharp_const(scheme *sc, char *name) {
      else if (*name == 'o') {/* #o (octal) */
           snprintf(tmp, STRBUFFSIZE, "0%s", name+1);
           sscanf(tmp, "%lo", (long unsigned *)&x);
-          return (mk_integer(sc, x));
+          return (scheme_make_integer(sc, x));
      } else if (*name == 'd') {    /* #d (decimal) */
           sscanf(name+1, "%ld", (long int *)&x);
-          return (mk_integer(sc, x));
+          return (scheme_make_integer(sc, x));
      } else if (*name == 'x') {    /* #x (hex) */
           snprintf(tmp, STRBUFFSIZE, "0x%s", name+1);
           sscanf(tmp, "%lx", (long unsigned *)&x);
-          return (mk_integer(sc, x));
+          return (scheme_make_integer(sc, x));
      } else if (*name == 'b') {    /* #b (binary) */
           x = binary_decode(name+1);
-          return (mk_integer(sc, x));
+          return (scheme_make_integer(sc, x));
      } else if (*name == '\\') { /* #\w (character) */
           int c=0;
           if(stricmp(name+1,"space")==0) {
@@ -1195,7 +1196,7 @@ static pointer mk_sharp_const(scheme *sc, char *name) {
           } else {
                return sc->NIL;
           }
-          return mk_character(sc,c);
+          return scheme_make_character(sc,c);
      } else
           return (sc->NIL);
 }
@@ -1653,7 +1654,7 @@ static pointer readstrexp(scheme *sc) {
                     break;
                case '"':
                     *p=0;
-                    return mk_counted_string(sc,sc->strbuff,p-sc->strbuff);
+                    return scheme_make_counted_string(sc,sc->strbuff,p-sc->strbuff);
                default:
                     *p++=c;
                     break;
@@ -2188,7 +2189,7 @@ static void new_frame_in_env(scheme *sc, pointer old_env)
 
      /* The interaction-environment has about 300 variables in it. */
      if (old_env == sc->NIL) {
-          new_frame = mk_vector(sc, 461);
+          new_frame = scheme_make_vector(sc, 461);
      } else {
           new_frame = sc->NIL;
      }
@@ -2333,7 +2334,7 @@ static pointer _Error_1(scheme *sc, const char *s, pointer a) {
           } else {
                sc->code = sc->NIL;
           }
-          sc->code = cons(sc, mk_string(sc, str), sc->code);
+          sc->code = cons(sc, scheme_make_string(sc, str), sc->code);
           setimmutable(car(sc->code));
           sc->code = cons(sc, slot_value_in_env(x), sc->code);
           sc->op = (int)OP_EVAL;
@@ -2346,7 +2347,7 @@ static pointer _Error_1(scheme *sc, const char *s, pointer a) {
      } else {
           sc->args = sc->NIL;
      }
-     sc->args = cons(sc, mk_string(sc, str), sc->args);
+     sc->args = cons(sc, scheme_make_string(sc, str), sc->args);
      setimmutable(car(sc->args));
      sc->op = (int)OP_ERR0;
      return sc->T;
@@ -2479,7 +2480,7 @@ static pointer _s_return(scheme *sc, pointer a) {
 static void s_save(scheme *sc, enum scheme_opcodes op, pointer args, pointer code) {
      sc->dump = cons(sc, sc->envir, cons(sc, (code), sc->dump));
      sc->dump = cons(sc, (args), sc->dump);
-     sc->dump = cons(sc, mk_integer(sc, (long)(op)), sc->dump);
+     sc->dump = cons(sc, scheme_make_integer(sc, (long)(op)), sc->dump);
 }
 
 static INLINE void dump_stack_mark(scheme *sc)
@@ -2504,7 +2505,7 @@ static pointer opexe_0(scheme *sc, enum scheme_opcodes op) {
           }
           else
           {
-               sc->args = mk_integer(sc,sc->file_i);
+               sc->args = scheme_make_integer(sc,sc->file_i);
                s_goto(sc,OP_T0LVL);
           }
 
@@ -2634,7 +2635,7 @@ static pointer opexe_0(scheme *sc, enum scheme_opcodes op) {
      case OP_TRACING: {
           int tr=sc->tracing;
           sc->tracing=ivalue(car(sc->args));
-          s_return(sc,mk_integer(sc,tr));
+          s_return(sc,scheme_make_integer(sc,tr));
      }
 #endif
 
@@ -3121,51 +3122,51 @@ static pointer opexe_2(scheme *sc, enum scheme_opcodes op) {
           if(num_is_integer(x)) {
                s_return(sc,x);
           } else if(modf(rvalue_unchecked(x),&dd)==0.0) {
-               s_return(sc,mk_integer(sc,ivalue(x)));
+               s_return(sc,scheme_make_integer(sc,ivalue(x)));
           } else {
                Error_1(sc,"inexact->exact: not integral:",x);
           }
 
      case OP_EXP:
           x=car(sc->args);
-          s_return(sc, mk_real(sc, exp(rvalue(x))));
+          s_return(sc, scheme_make_real(sc, exp(rvalue(x))));
 
      case OP_LOG:
           x=car(sc->args);
-          s_return(sc, mk_real(sc, log(rvalue(x))));
+          s_return(sc, scheme_make_real(sc, log(rvalue(x))));
 
      case OP_SIN:
           x=car(sc->args);
-          s_return(sc, mk_real(sc, sin(rvalue(x))));
+          s_return(sc, scheme_make_real(sc, sin(rvalue(x))));
 
      case OP_COS:
           x=car(sc->args);
-          s_return(sc, mk_real(sc, cos(rvalue(x))));
+          s_return(sc, scheme_make_real(sc, cos(rvalue(x))));
 
      case OP_TAN:
           x=car(sc->args);
-          s_return(sc, mk_real(sc, tan(rvalue(x))));
+          s_return(sc, scheme_make_real(sc, tan(rvalue(x))));
 
      case OP_ASIN:
           x=car(sc->args);
-          s_return(sc, mk_real(sc, asin(rvalue(x))));
+          s_return(sc, scheme_make_real(sc, asin(rvalue(x))));
 
      case OP_ACOS:
           x=car(sc->args);
-          s_return(sc, mk_real(sc, acos(rvalue(x))));
+          s_return(sc, scheme_make_real(sc, acos(rvalue(x))));
 
      case OP_ATAN:
           x=car(sc->args);
           if(cdr(sc->args)==sc->NIL) {
-               s_return(sc, mk_real(sc, atan(rvalue(x))));
+               s_return(sc, scheme_make_real(sc, atan(rvalue(x))));
           } else {
                pointer y=cadr(sc->args);
-               s_return(sc, mk_real(sc, atan2(rvalue(x),rvalue(y))));
+               s_return(sc, scheme_make_real(sc, atan2(rvalue(x),rvalue(y))));
           }
 
      case OP_SQRT:
           x=car(sc->args);
-          s_return(sc, mk_real(sc, sqrt(rvalue(x))));
+          s_return(sc, scheme_make_real(sc, sqrt(rvalue(x))));
 
      case OP_EXPT: {
           double result;
@@ -3190,28 +3191,28 @@ static pointer opexe_2(scheme *sc, enum scheme_opcodes op) {
                     real_result = 1;
           }
           if (real_result) {
-               s_return(sc, mk_real(sc, result));
+               s_return(sc, scheme_make_real(sc, result));
           } else {
-               s_return(sc, mk_integer(sc, (long)result));
+               s_return(sc, scheme_make_integer(sc, (long)result));
           }
      }
 
      case OP_FLOOR:
           x=car(sc->args);
-          s_return(sc, mk_real(sc, floor(rvalue(x))));
+          s_return(sc, scheme_make_real(sc, floor(rvalue(x))));
 
      case OP_CEILING:
           x=car(sc->args);
-          s_return(sc, mk_real(sc, ceil(rvalue(x))));
+          s_return(sc, scheme_make_real(sc, ceil(rvalue(x))));
 
      case OP_TRUNCATE : {
           double rvalue_of_x ;
           x=car(sc->args);
           rvalue_of_x = rvalue(x) ;
           if (rvalue_of_x > 0) {
-               s_return(sc, mk_real(sc, floor(rvalue_of_x)));
+               s_return(sc, scheme_make_real(sc, floor(rvalue_of_x)));
           } else {
-               s_return(sc, mk_real(sc, ceil(rvalue_of_x)));
+               s_return(sc, scheme_make_real(sc, ceil(rvalue_of_x)));
           }
      }
 
@@ -3219,7 +3220,7 @@ static pointer opexe_2(scheme *sc, enum scheme_opcodes op) {
           x=car(sc->args);
           if (num_is_integer(x))
                s_return(sc, x);
-          s_return(sc, mk_real(sc, round_per_R5RS(rvalue(x))));
+          s_return(sc, scheme_make_real(sc, round_per_R5RS(rvalue(x))));
 #endif
 
      case OP_ADD:        /* + */
@@ -3330,31 +3331,31 @@ static pointer opexe_2(scheme *sc, enum scheme_opcodes op) {
      case OP_CHAR2INT: { /* char->integer */
           char c;
           c=(char)ivalue(car(sc->args));
-          s_return(sc,mk_integer(sc,(unsigned char)c));
+          s_return(sc,scheme_make_integer(sc,(unsigned char)c));
      }
 
      case OP_INT2CHAR: { /* integer->char */
           unsigned char c;
           c=(unsigned char)ivalue(car(sc->args));
-          s_return(sc,mk_character(sc,(char)c));
+          s_return(sc,scheme_make_character(sc,(char)c));
      }
 
      case OP_CHARUPCASE: {
           unsigned char c;
           c=(unsigned char)ivalue(car(sc->args));
           c=toupper(c);
-          s_return(sc,mk_character(sc,(char)c));
+          s_return(sc,scheme_make_character(sc,(char)c));
      }
 
      case OP_CHARDNCASE: {
           unsigned char c;
           c=(unsigned char)ivalue(car(sc->args));
           c=tolower(c);
-          s_return(sc,mk_character(sc,(char)c));
+          s_return(sc,scheme_make_character(sc,(char)c));
      }
 
      case OP_STR2SYM:  /* string->symbol */
-          s_return(sc,mk_symbol(sc,strvalue(car(sc->args))));
+          s_return(sc,scheme_make_symbol(sc,strvalue(car(sc->args))));
 
      case OP_STR2ATOM: /* string->atom */ {
           char *s=strvalue(car(sc->args));
@@ -3382,7 +3383,7 @@ static pointer opexe_2(scheme *sc, enum scheme_opcodes op) {
                     char *ep;
                     long iv = strtol(s,&ep,(int )pf);
                     if (*ep == 0) {
-                         s_return(sc, mk_integer(sc, iv));
+                         s_return(sc, scheme_make_integer(sc, iv));
                     }
                     else {
                          s_return(sc, sc->F);
@@ -3392,7 +3393,7 @@ static pointer opexe_2(scheme *sc, enum scheme_opcodes op) {
      }
 
      case OP_SYM2STR: /* symbol->string */
-          x=mk_string(sc,symname(car(sc->args)));
+          x=scheme_make_string(sc,symname(car(sc->args)));
           setimmutable(x);
           s_return(sc,x);
 
@@ -3416,7 +3417,7 @@ static pointer opexe_2(scheme *sc, enum scheme_opcodes op) {
                char *p;
                int len;
                atom2str(sc,x,(int )pf,&p,&len);
-               s_return(sc,mk_counted_string(sc,p,len));
+               s_return(sc,scheme_make_counted_string(sc,p,len));
           } else {
                Error_1(sc, "atom->string: not an atom:", x);
           }
@@ -3431,11 +3432,11 @@ static pointer opexe_2(scheme *sc, enum scheme_opcodes op) {
           if(cdr(sc->args)!=sc->NIL) {
                fill=charvalue(cadr(sc->args));
           }
-          s_return(sc,mk_empty_string(sc,len,(char)fill));
+          s_return(sc,scheme_make_empty_string(sc,len,(char)fill));
      }
 
      case OP_STRLEN:  /* string-length */
-          s_return(sc,mk_integer(sc,strlength(car(sc->args))));
+          s_return(sc,scheme_make_integer(sc,strlength(car(sc->args))));
 
      case OP_STRREF: { /* string-ref */
           char *str;
@@ -3449,7 +3450,7 @@ static pointer opexe_2(scheme *sc, enum scheme_opcodes op) {
                Error_1(sc,"string-ref: out of bounds:",cadr(sc->args));
           }
 
-          s_return(sc,mk_character(sc,((unsigned char*)str)[index]));
+          s_return(sc,scheme_make_character(sc,((unsigned char*)str)[index]));
      }
 
      case OP_STRSET: { /* string-set! */
@@ -3483,7 +3484,7 @@ static pointer opexe_2(scheme *sc, enum scheme_opcodes op) {
           for (x = sc->args; x != sc->NIL; x = cdr(x)) {
                len += strlength(car(x));
           }
-          newstr = mk_empty_string(sc, len, ' ');
+          newstr = scheme_make_empty_string(sc, len, ' ');
           /* store the contents of the argument strings into the new string */
           for (pos = strvalue(newstr), x = sc->args; x != sc->NIL;
                pos += strlength(car(x)), x = cdr(x)) {
@@ -3516,7 +3517,7 @@ static pointer opexe_2(scheme *sc, enum scheme_opcodes op) {
           }
 
           len=index1-index0;
-          x=mk_empty_string(sc,len,' ');
+          x=scheme_make_empty_string(sc,len,' ');
           memcpy(strvalue(x),str+index0,len);
           strvalue(x)[len]=0;
 
@@ -3530,7 +3531,7 @@ static pointer opexe_2(scheme *sc, enum scheme_opcodes op) {
           if(len<0) {
                Error_1(sc,"vector: not a proper list:",sc->args);
           }
-          vec=mk_vector(sc,len);
+          vec=scheme_make_vector(sc,len);
           if(sc->no_memory) { s_return(sc, sc->sink); }
           for (x = sc->args, i = 0; is_pair(x); x = cdr(x), i++) {
                set_vector_elem(vec,i,car(x));
@@ -3548,7 +3549,7 @@ static pointer opexe_2(scheme *sc, enum scheme_opcodes op) {
           if(cdr(sc->args)!=sc->NIL) {
                fill=cadr(sc->args);
           }
-          vec=mk_vector(sc,len);
+          vec=scheme_make_vector(sc,len);
           if(sc->no_memory) { s_return(sc, sc->sink); }
           if(fill!=sc->NIL) {
                fill_vector(vec,fill);
@@ -3557,7 +3558,7 @@ static pointer opexe_2(scheme *sc, enum scheme_opcodes op) {
      }
 
      case OP_VECLEN:  /* vector-length */
-          s_return(sc,mk_integer(sc,ivalue(car(sc->args))));
+          s_return(sc,scheme_make_integer(sc,ivalue(car(sc->args))));
 
      case OP_VECREF: { /* vector-ref */
           int index;
@@ -3782,7 +3783,7 @@ static pointer opexe_4(scheme *sc, enum scheme_opcodes op) {
      case OP_ERR0:  /* error */
           sc->retcode=-1;
           if (!is_string(car(sc->args))) {
-               sc->args=cons(sc,mk_string(sc," -- "),sc->args);
+               sc->args=cons(sc,scheme_make_string(sc," -- "),sc->args);
                setimmutable(car(sc->args));
           }
           putstr(sc, "Error: ");
@@ -3961,7 +3962,7 @@ static pointer opexe_4(scheme *sc, enum scheme_opcodes op) {
 
                     memcpy(str,p->rep.string.start,size-1);
                     str[size-1]='\0';
-                    s=mk_string(sc,str);
+                    s=scheme_make_string(sc,str);
                     sc->free(str);
                     s_return(sc,s);
                }
@@ -3995,7 +3996,7 @@ static pointer opexe_5(scheme *sc, enum scheme_opcodes op) {
           int n=sc->nesting;
           sc->nesting=0;
           sc->retcode=-1;
-          Error_1(sc,"unmatched parentheses:",mk_integer(sc,n));
+          Error_1(sc,"unmatched parentheses:",scheme_make_integer(sc,n));
      }
 
      switch (op) {
@@ -4034,7 +4035,7 @@ static pointer opexe_5(scheme *sc, enum scheme_opcodes op) {
           if(sc->op==OP_PEEK_CHAR) {
                backchar(sc,c);
           }
-          s_return(sc,mk_character(sc,c));
+          s_return(sc,scheme_make_character(sc,c));
      }
 
      case OP_CHAR_READY: /* char-ready? */ {
@@ -4184,8 +4185,8 @@ static pointer opexe_5(scheme *sc, enum scheme_opcodes op) {
           s_return(sc,cons(sc, sc->QQUOTE, cons(sc, sc->value, sc->NIL)));
 
      case OP_RDQQUOTEVEC:
-          s_return(sc,cons(sc, mk_symbol(sc,"apply"),
-                           cons(sc, mk_symbol(sc,"vector"),
+          s_return(sc,cons(sc, scheme_make_symbol(sc,"apply"),
+                           cons(sc, scheme_make_symbol(sc,"vector"),
                                 cons(sc,cons(sc, sc->QQUOTE,
                                              cons(sc,sc->value,sc->NIL)),
                                      sc->NIL))));
@@ -4211,7 +4212,7 @@ static pointer opexe_5(scheme *sc, enum scheme_opcodes op) {
      case OP_P0LIST:
           if(is_vector(sc->args)) {
                putstr(sc,"#(");
-               sc->args=cons(sc,sc->args,mk_integer(sc,0));
+               sc->args=cons(sc,sc->args,scheme_make_integer(sc,0));
                s_goto(sc,OP_PVECFROM);
           } else if(is_environment(sc->args)) {
                putstr(sc,"#<ENVIRONMENT>");
@@ -4296,7 +4297,7 @@ static pointer opexe_6(scheme *sc, enum scheme_opcodes op) {
           if(v<0) {
                Error_1(sc,"length: not a list:",car(sc->args));
           }
-          s_return(sc,mk_integer(sc, v));
+          s_return(sc,scheme_make_integer(sc, v));
 
      case OP_ASSQ:       /* assq */     /* a.k */
           x = car(sc->args);
@@ -4692,7 +4693,7 @@ static void assign_syntax(scheme *sc, char *name) {
 static void assign_proc(scheme *sc, enum scheme_opcodes op, char *name) {
      pointer x, y;
 
-     x = mk_symbol(sc, name);
+     x = scheme_make_symbol(sc, name);
      y = mk_proc(sc,op);
      new_slot_in_env(sc, x, y);
 }
@@ -4744,27 +4745,29 @@ static int syntaxnum(pointer p) {
 
 /* initialization of TinyScheme */
 #if USE_INTERFACE
+
 INTERFACE static pointer s_cons(scheme *sc, pointer a, pointer b) {
      return cons(sc,a,b);
 }
+
 INTERFACE static pointer s_immutable_cons(scheme *sc, pointer a, pointer b) {
      return immutable_cons(sc,a,b);
 }
 
-static struct scheme_interface vtbl ={
+static struct scheme_interface vtbl = {
      scheme_define,
      s_cons,
      s_immutable_cons,
      reserve_cells,
-     mk_integer,
-     mk_real,
-     mk_symbol,
+     scheme_make_integer,
+     scheme_make_real,
+     scheme_make_symbol,
      gensym,
-     mk_string,
-     mk_counted_string,
-     mk_character,
-     mk_vector,
-     mk_foreign_func,
+     scheme_make_string,
+     scheme_make_counted_string,
+     scheme_make_character,
+     scheme_make_vector,
+     scheme_make_foreign_func,
      putstr,
      putcharacter,
 
@@ -4813,6 +4816,7 @@ static struct scheme_interface vtbl ={
      scheme_load_file,
      scheme_load_string
 };
+
 #endif
 
 scheme *scheme_init_new() {
@@ -4900,7 +4904,7 @@ int scheme_init_custom_alloc(scheme *sc, func_alloc malloc, func_dealloc free) {
      new_frame_in_env(sc, sc->NIL);
      sc->global_env = sc->envir;
      /* init else */
-     x = mk_symbol(sc,"else");
+     x = scheme_make_symbol(sc,"else");
      new_slot_in_env(sc, x, sc->T);
 
      assign_syntax(sc, "lambda");
@@ -4927,16 +4931,16 @@ int scheme_init_custom_alloc(scheme *sc, func_alloc malloc, func_dealloc free) {
      }
 
      /* initialization of global pointers to special symbols */
-     sc->LAMBDA = mk_symbol(sc, "lambda");
-     sc->QUOTE = mk_symbol(sc, "quote");
-     sc->QQUOTE = mk_symbol(sc, "quasiquote");
-     sc->UNQUOTE = mk_symbol(sc, "unquote");
-     sc->UNQUOTESP = mk_symbol(sc, "unquote-splicing");
-     sc->FEED_TO = mk_symbol(sc, "=>");
-     sc->COLON_HOOK = mk_symbol(sc,"*colon-hook*");
-     sc->ERROR_HOOK = mk_symbol(sc, "*error-hook*");
-     sc->SHARP_HOOK = mk_symbol(sc, "*sharp-hook*");
-     sc->COMPILE_HOOK = mk_symbol(sc, "*compile-hook*");
+     sc->LAMBDA = scheme_make_symbol(sc, "lambda");
+     sc->QUOTE = scheme_make_symbol(sc, "quote");
+     sc->QQUOTE = scheme_make_symbol(sc, "quasiquote");
+     sc->UNQUOTE = scheme_make_symbol(sc, "unquote");
+     sc->UNQUOTESP = scheme_make_symbol(sc, "unquote-splicing");
+     sc->FEED_TO = scheme_make_symbol(sc, "=>");
+     sc->COLON_HOOK = scheme_make_symbol(sc,"*colon-hook*");
+     sc->ERROR_HOOK = scheme_make_symbol(sc, "*error-hook*");
+     sc->SHARP_HOOK = scheme_make_symbol(sc, "*sharp-hook*");
+     sc->COMPILE_HOOK = scheme_make_symbol(sc, "*compile-hook*");
 
      return !sc->no_memory;
 }
@@ -5031,7 +5035,7 @@ void scheme_load_named_file(scheme *sc, FILE *fin, const char *filename) {
      sc->inport=sc->loadport;
     
 
-     sc->args = mk_integer(sc,sc->file_i);
+     sc->args = scheme_make_integer(sc,sc->file_i);
 
      Eval_Cycle(sc, OP_T0LVL);
      typeflag(sc->loadport)=T_ATOM;
@@ -5053,7 +5057,7 @@ void scheme_load_string(scheme *sc, const char *cmd) {
      sc->retcode=0;
      sc->interactive_repl=0;
      sc->inport=sc->loadport;
-     sc->args = mk_integer(sc,sc->file_i);
+     sc->args = scheme_make_integer(sc,sc->file_i);
      Eval_Cycle(sc, OP_T0LVL);
      typeflag(sc->loadport)=T_ATOM;
      if(sc->retcode==0) {
@@ -5076,8 +5080,8 @@ void scheme_define(scheme *sc, pointer envir, pointer symbol, pointer value) {
 void scheme_register_foreign_func(scheme* sc, scheme_registerable* sr){
      scheme_define(sc,
                    sc->global_env,
-                   mk_symbol(sc,sr->name),
-                   mk_foreign_func(sc, sr->f));
+                   scheme_make_symbol(sc,sr->name),
+                   scheme_make_foreign_func(sc, sr->f));
 }
 
 void scheme_register_foreign_func_list(scheme* sc,
@@ -5090,7 +5094,7 @@ void scheme_register_foreign_func_list(scheme* sc,
 }
 
 pointer scheme_apply0(scheme *sc, const char *procname){
-     return scheme_eval(sc, cons(sc,mk_symbol(sc,procname),sc->NIL));
+     return scheme_eval(sc, cons(sc,scheme_make_symbol(sc,procname),sc->NIL));
 }
 
 void save_from_C_call(scheme *sc){
@@ -5292,18 +5296,6 @@ static void make_init_fn(const char *name, char *init_fn) {
 
 #if STANDALONE
 
-pointer scm_exit(scheme* sc, pointer args){
-    /* if(args != sc->NIL){ */
-    /*     if(is_string(pair_car(args))){ */
-    /*         printf("%s\n", string_value(pair_car(args))); */
-    /*     } */
-    /* } */
-     scheme_deinit(sc);
-     sc = NULL;
-     return sc->NIL;
-}
-
-
 #if defined(__APPLE__) && !defined (OSX)
 int main()
 {
@@ -5344,9 +5336,8 @@ int main(int argc, char **argv) {
      scheme_set_input_port_file(&sc, stdin);
      scheme_set_output_port_file(&sc, stdout);
 #if USE_DL
-     scheme_define(&sc,sc.global_env,mk_symbol(&sc,"load-extension"), mk_foreign_func(&sc, scm_load_ext));
+     scheme_define(&sc,sc.global_env,scheme_make_symbol(&sc,"load-extension"), scheme_make_foreign_func(&sc, scm_load_ext));
 #endif
-     scheme_define(&sc, sc.global_env, mk_symbol(&sc, "exit"), mk_foreign_func(&sc, scm_exit));
 
      argv++;
      if(access(file_name,0) != 0) {
@@ -5368,11 +5359,11 @@ int main(int argc, char **argv) {
                     fin=fopen(file_name,"r");
                }
                for(;*argv;argv++) {
-                    pointer value=mk_string(&sc,*argv);
+                    pointer value=scheme_make_string(&sc,*argv);
                     args=cons(&sc,value,args);
                }
                args=reverse_in_place(&sc,sc.NIL,args);
-               scheme_define(&sc,sc.global_env,mk_symbol(&sc,"*args*"),args);
+               scheme_define(&sc,sc.global_env,scheme_make_symbol(&sc,"*args*"),args);
 
           } else {
                fin=fopen(file_name,"r");

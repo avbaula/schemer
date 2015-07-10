@@ -147,29 +147,29 @@ SCHEME_EXPORT pointer scheme_eval(scheme *sc, pointer obj);
 void scheme_set_external_data(scheme *sc, void *p);
 SCHEME_EXPORT void scheme_define(scheme *sc, pointer env, pointer symbol, pointer value);
 
-SCHEME_EXPORT pointer scm_load_ext(scheme *sc, pointer arglist);
+SCHEME_EXPORT pointer scheme_load_ext(scheme *sc, pointer arglist);
 
 typedef pointer (*foreign_func)(scheme*, pointer);
 
-pointer _cons(scheme* sc, pointer a, pointer b, int immutable);
-pointer mk_integer(scheme* sc, long num);
-pointer mk_real(scheme* sc, double num);
-pointer mk_symbol(scheme* sc, const char *name);
-pointer gensym(scheme* sc);
-pointer mk_string(scheme* sc, const char *str);
-pointer mk_counted_string(scheme* sc, const char *str, int len);
-pointer mk_empty_string(scheme* sc, int len, char fill);
-pointer mk_character(scheme* sc, int c);
-pointer mk_foreign_func(scheme* sc, foreign_func f);
+pointer scheme_cons(scheme* sc, pointer a, pointer b, int immutable);
+pointer scheme_make_integer(scheme* sc, long num);
+pointer scheme_make_real(scheme* sc, double num);
+pointer scheme_make_symbol(scheme* sc, const char *name);
+pointer scheme_gensym(scheme* sc);
+pointer scheme_make_string(scheme* sc, const char *str);
+pointer scheme_make_counted_string(scheme* sc, const char *str, int len);
+pointer scheme_make_empty_string(scheme* sc, int len, char fill);
+pointer scheme_make_character(scheme* sc, int c);
+pointer scheme_make_foreign_func(scheme* sc, foreign_func f);
 void putstr(scheme* sc, const char* s);
-int list_length(scheme* sc, pointer a);
-int eqv(pointer a, pointer b);
+int scheme_list_length(scheme* sc, pointer a);
+int scheme_eqv(pointer a, pointer b);
 
 
 #if USE_INTERFACE
 
 struct scheme_interface {
-     void (*scheme_define)(scheme *sc, pointer env, pointer symbol, pointer value);
+     void (*define)(scheme *sc, pointer env, pointer symbol, pointer value);
      pointer (*cons)(scheme *sc, pointer a, pointer b);
      pointer (*immutable_cons)(scheme *sc, pointer a, pointer b);
      pointer (*reserve_cells)(scheme *sc, int n);
@@ -584,8 +584,8 @@ enum scheme_opcodes {
 };
 
 
-#define cons(sc,a,b) _cons(sc,a,b,0)
-#define immutable_cons(sc,a,b) _cons(sc,a,b,1)
+#define cons(sc,a,b) scheme_cons(sc,a,b,0)
+#define immutable_cons(sc,a,b) scheme_cons(sc,a,b,1)
 
 int is_string(pointer p);
 char *string_value(pointer p);
