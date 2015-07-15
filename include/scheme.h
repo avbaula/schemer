@@ -117,8 +117,8 @@ extern "C" {
 typedef struct scheme scheme;
 typedef struct cell *pointer;
 
-typedef void * (*func_alloc)(size_t);
-typedef void (*func_dealloc)(void *);
+typedef void* (*scheme_func_alloc)(size_t);
+typedef void  (*scheme_func_dealloc)(void*);
 
 /* num, for generic arithmetic */
 typedef struct num {
@@ -130,63 +130,109 @@ typedef struct num {
 } num;
 
 SCHEME_EXPORT scheme* scheme_init_new();
-SCHEME_EXPORT scheme* scheme_init_new_custom_alloc(func_alloc malloc, func_dealloc free);
-SCHEME_EXPORT int scheme_init(scheme *sc);
-SCHEME_EXPORT int scheme_init_custom_alloc(scheme *sc, func_alloc, func_dealloc);
-SCHEME_EXPORT void scheme_deinit(scheme *sc);
-void scheme_set_input_port_file(scheme *sc, FILE *fin);
-void scheme_set_input_port_string(scheme *sc, char *start, char *past_the_end);
-SCHEME_EXPORT void scheme_set_output_port_file(scheme *sc, FILE *fin);
-void scheme_set_output_port_string(scheme *sc, char *start, char *past_the_end);
-SCHEME_EXPORT void scheme_load_file(scheme *sc, FILE *fin);
-SCHEME_EXPORT void scheme_load_named_file(scheme *sc, FILE *fin, const char *filename);
-SCHEME_EXPORT void scheme_load_string(scheme *sc, const char *cmd);
-SCHEME_EXPORT pointer scheme_apply0(scheme *sc, const char *procname);
-SCHEME_EXPORT pointer scheme_call(scheme *sc, pointer func, pointer args);
-SCHEME_EXPORT pointer scheme_eval(scheme *sc, pointer obj);
-void scheme_set_external_data(scheme *sc, void *p);
-SCHEME_EXPORT void scheme_define(scheme *sc, pointer env, pointer symbol, pointer value);
+SCHEME_EXPORT scheme* scheme_init_new_custom_alloc(scheme_func_alloc malloc, scheme_func_dealloc free);
+SCHEME_EXPORT int scheme_init(scheme* sc);
+SCHEME_EXPORT int scheme_init_custom_alloc(scheme* sc, scheme_func_alloc, scheme_func_dealloc);
+SCHEME_EXPORT void scheme_deinit(scheme* sc);
+void scheme_set_input_port_file(scheme* sc, FILE* fin);
+void scheme_set_input_port_string(scheme* sc, char* start, char* past_the_end);
+SCHEME_EXPORT void scheme_set_output_port_file(scheme* sc, FILE* fin);
+void scheme_set_output_port_string(scheme* sc, char* start, char* past_the_end);
+SCHEME_EXPORT void scheme_load_file(scheme* sc, FILE* fin);
+SCHEME_EXPORT void scheme_load_named_file(scheme* sc, FILE* fin, const char* filename);
+SCHEME_EXPORT void scheme_load_string(scheme* sc, const char* cmd);
+SCHEME_EXPORT pointer scheme_apply0(scheme* sc, const char* procname);
+SCHEME_EXPORT pointer scheme_call(scheme* sc, pointer func, pointer args);
+SCHEME_EXPORT pointer scheme_eval(scheme* sc, pointer obj);
+void scheme_set_external_data(scheme* sc, void* p);
+SCHEME_EXPORT void scheme_define(scheme* sc, pointer env, pointer symbol, pointer value);
 
-SCHEME_EXPORT pointer scheme_load_ext(scheme *sc, pointer arglist);
+SCHEME_EXPORT pointer scheme_load_ext(scheme* sc, pointer arglist);
 
 typedef pointer (*foreign_func)(scheme*, pointer);
 
-pointer scheme_cons(scheme* sc, pointer a, pointer b, int immutable);
+pointer scheme_cons_param(scheme* sc, pointer a, pointer b, int immutable);
+#define scheme_cons(sc,a,b) scheme_cons_param(sc,a,b,0)
+#define scheme_immutable_cons(sc,a,b) scheme_cons_param(sc,a,b,1)
+
+
 pointer scheme_make_integer(scheme* sc, long num);
 pointer scheme_make_real(scheme* sc, double num);
-pointer scheme_make_symbol(scheme* sc, const char *name);
+pointer scheme_make_symbol(scheme* sc, const char* name);
 pointer scheme_gensym(scheme* sc);
-pointer scheme_make_string(scheme* sc, const char *str);
-pointer scheme_make_counted_string(scheme* sc, const char *str, int len);
+pointer scheme_make_string(scheme* sc, const char* str);
+pointer scheme_make_counted_string(scheme* sc, const char* str, int len);
 pointer scheme_make_empty_string(scheme* sc, int len, char fill);
 pointer scheme_make_character(scheme* sc, int c);
 pointer scheme_make_foreign_func(scheme* sc, foreign_func f);
-void putstr(scheme* sc, const char* s);
+void scheme_putstr(scheme* sc, const char* s);
 int scheme_list_length(scheme* sc, pointer a);
 int scheme_eqv(pointer a, pointer b);
 
+int scheme_is_string(pointer p);
+char* scheme_get_string_value(pointer p);
+int scheme_is_number(pointer p);
+int scheme_is_integer(pointer p);
+int scheme_is_real(pointer p);
+int scheme_is_character(pointer p);
+num scheme_get_nvalue(pointer p);
+long scheme_get_ivalue(pointer p);
+double scheme_get_rvalue(pointer p);
+long scheme_getcharvalue(pointer p);
+int scheme_is_vector(pointer p);
+
+int scheme_is_port(pointer p);
+
+int scheme_is_pair(pointer p);
+pointer scheme_pair_car(pointer p);
+pointer scheme_pair_cdr(pointer p);
+pointer scheme_set_car(pointer p, pointer q);
+pointer scheme_set_cdr(pointer p, pointer q);
+
+int scheme_is_symbol(pointer p);
+char* scheme_symname(pointer p);
+int scheme_hasprop(pointer p);
+
+int scheme_is_syntax(pointer p);
+int scheme_is_proc(pointer p);
+int scheme_is_foreign(pointer p);
+char* scheme_syntaxname(pointer p);
+int scheme_is_closure(pointer p);
+
+#ifdef USE_MACRO
+int scheme_is_macro(pointer p);
+#endif
+     
+pointer scheme_closure_code(pointer p);
+pointer scheme_closure_env(pointer p);
+
+int scheme_is_continuation(pointer p);
+int scheme_is_promise(pointer p);
+int scheme_is_environment(pointer p);
+int scheme_is_immutable(pointer p);
+void scheme_setimmutable(pointer p);
 
 #if USE_INTERFACE
 
 struct scheme_interface {
-     void (*define)(scheme *sc, pointer env, pointer symbol, pointer value);
-     pointer (*cons)(scheme *sc, pointer a, pointer b);
-     pointer (*immutable_cons)(scheme *sc, pointer a, pointer b);
-     pointer (*reserve_cells)(scheme *sc, int n);
-     pointer (*mk_integer)(scheme *sc, long num);
-     pointer (*mk_real)(scheme *sc, double num);
-     pointer (*mk_symbol)(scheme *sc, const char *name);
-     pointer (*gensym)(scheme *sc);
-     pointer (*mk_string)(scheme *sc, const char *str);
-     pointer (*mk_counted_string)(scheme *sc, const char *str, int len);
-     pointer (*mk_character)(scheme *sc, int c);
-     pointer (*mk_vector)(scheme *sc, int len);
-     pointer (*mk_foreign_func)(scheme *sc, foreign_func f);
-     void (*putstr)(scheme *sc, const char *s);
-     void (*putcharacter)(scheme *sc, int c);
+     void (*define)(scheme* sc, pointer env, pointer symbol, pointer value);
+     pointer (*cons)(scheme* sc, pointer a, pointer b);
+     pointer (*immutable_cons)(scheme* sc, pointer a, pointer b);
+     pointer (*reserve_cells)(scheme* sc, int n);
+     pointer (*mk_integer)(scheme* sc, long num);
+     pointer (*mk_real)(scheme* sc, double num);
+     pointer (*mk_symbol)(scheme* sc, const char* name);
+     pointer (*gensym)(scheme* sc);
+     pointer (*mk_string)(scheme* sc, const char* str);
+     pointer (*mk_counted_string)(scheme* sc, const char* str, int len);
+     pointer (*mk_character)(scheme* sc, int c);
+     pointer (*mk_vector)(scheme* sc, int len);
+     pointer (*mk_foreign_func)(scheme* sc, foreign_func f);
+     void (*putstr)(scheme* sc, const char* s);
+     void (*putcharacter)(scheme* sc, int c);
 
      int (*is_string)(pointer p);
-     char *(*string_value)(pointer p);
+     char* (*string_value)(pointer p);
      int (*is_number)(pointer p);
      num (*nvalue)(pointer p);
      long (*ivalue)(pointer p);
@@ -195,9 +241,9 @@ struct scheme_interface {
      int (*is_real)(pointer p);
      int (*is_character)(pointer p);
      long (*charvalue)(pointer p);
-     int (*is_list)(scheme *sc, pointer p);
+     int (*is_list)(scheme* sc, pointer p);
      int (*is_vector)(pointer p);
-     int (*list_length)(scheme *sc, pointer vec);
+     int (*list_length)(scheme* sc, pointer vec);
      long (*vector_length)(pointer vec);
      void (*fill_vector)(pointer vec, pointer elem);
      pointer (*vector_elem)(pointer vec, int ielem);
@@ -211,12 +257,12 @@ struct scheme_interface {
      pointer (*set_cdr)(pointer p, pointer q);
 
      int (*is_symbol)(pointer p);
-     char *(*symname)(pointer p);
+     char* (*symname)(pointer p);
 
      int (*is_syntax)(pointer p);
      int (*is_proc)(pointer p);
      int (*is_foreign)(pointer p);
-     char *(*syntaxname)(pointer p);
+     char* (*syntaxname)(pointer p);
      int (*is_closure)(pointer p);
      int (*is_macro)(pointer p);
      pointer (*closure_code)(pointer p);
@@ -227,8 +273,8 @@ struct scheme_interface {
      int (*is_environment)(pointer p);
      int (*is_immutable)(pointer p);
      void (*setimmutable)(pointer p);
-     void (*load_file)(scheme *sc, FILE *fin);
-     void (*load_string)(scheme *sc, const char *input);
+     void (*load_file)(scheme* sc, FILE* fin);
+     void (*load_string)(scheme* sc, const char* input);
 };
 #endif
 
@@ -237,11 +283,10 @@ struct scheme_interface {
 typedef struct scheme_registerable{
      foreign_func  f;
      const char* name;
-}
-scheme_registerable;
+} scheme_registerable;
 
-void scheme_register_foreign_func_list(scheme * sc,
-                                       scheme_registerable * list,
+void scheme_register_foreign_func_list(scheme* sc,
+                                       scheme_registerable* list,
                                        int n);
 
 #endif /* !STANDALONE */
@@ -260,17 +305,17 @@ typedef struct port {
      unsigned char kind;
      union {
           struct {
-               FILE *file;
+               FILE* file;
                int closeit;
 #if SHOW_ERROR_LINE
                int curr_line;
-               char *filename;
+               char* filename;
 #endif
           } stdio;
           struct {
-               char *start;
-               char *past_the_end;
-               char *curr;
+               char* start;
+               char* past_the_end;
+               char* curr;
           } string;
      } rep;
 } port;
@@ -280,23 +325,23 @@ struct cell {
      unsigned int _flag;
      union {
           struct {
-               char   *_svalue;
+               char* _svalue;
                int   _length;
           } _string;
           num _number;
-          port *_port;
+          port* _port;
           foreign_func _ff;
           struct {
-               struct cell *_car;
-               struct cell *_cdr;
+               struct cell* _car;
+               struct cell* _cdr;
           } _cons;
      } _object;
 };
 
 struct scheme {
 /* arrays for segments */
-     func_alloc malloc;
-     func_dealloc free;
+     scheme_func_alloc malloc;
+     scheme_func_dealloc free;
 
 /* return code */
      int retcode;
@@ -305,7 +350,7 @@ struct scheme {
 
 #define CELL_SEGSIZE    5000  /* # of cells in one segment */
 #define CELL_NSEGMENT   10    /* # of segments for cells */
-     char *alloc_seg[CELL_NSEGMENT];
+     char* alloc_seg[CELL_NSEGMENT];
      pointer cell_seg[CELL_NSEGMENT];
      int     last_cell_seg;
 
@@ -366,17 +411,17 @@ struct scheme {
 #define STRBUFFSIZE 256
      char    strbuff[STRBUFFSIZE];
 
-     FILE *tmpfp;
+     FILE* tmpfp;
      int tok;
      int print_flag;
      pointer value;
      int op;
 
-     void *ext_data;     /* For the benefit of foreign functions */
+     void* ext_data;     /* For the benefit of foreign functions */
      long gensym_cnt;
 
      struct scheme_interface *vptr;
-     void *dump_base;    /* pointer to base of allocated dump stack */
+     void* dump_base;    /* pointer to base of allocated dump stack */
      int dump_size;      /* number of frames allocated for dump stack */
 };
 
@@ -583,50 +628,6 @@ enum scheme_opcodes {
      OP_MAXDEFINED
 };
 
-
-#define cons(sc,a,b) scheme_cons(sc,a,b,0)
-#define immutable_cons(sc,a,b) scheme_cons(sc,a,b,1)
-
-int is_string(pointer p);
-char *string_value(pointer p);
-int is_number(pointer p);
-num nvalue(pointer p);
-long ivalue(pointer p);
-double rvalue(pointer p);
-int is_integer(pointer p);
-int is_real(pointer p);
-int is_character(pointer p);
-long charvalue(pointer p);
-int is_vector(pointer p);
-
-int is_port(pointer p);
-
-int is_pair(pointer p);
-pointer pair_car(pointer p);
-pointer pair_cdr(pointer p);
-pointer set_car(pointer p, pointer q);
-pointer set_cdr(pointer p, pointer q);
-
-int is_symbol(pointer p);
-char *symname(pointer p);
-int hasprop(pointer p);
-
-int is_syntax(pointer p);
-int is_proc(pointer p);
-int is_foreign(pointer p);
-char *syntaxname(pointer p);
-int is_closure(pointer p);
-#ifdef USE_MACRO
-int is_macro(pointer p);
-#endif
-pointer closure_code(pointer p);
-pointer closure_env(pointer p);
-
-int is_continuation(pointer p);
-int is_promise(pointer p);
-int is_environment(pointer p);
-int is_immutable(pointer p);
-void setimmutable(pointer p);
 
 #ifdef __cplusplus
 }
